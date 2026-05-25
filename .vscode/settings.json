@@ -20,5 +20,6 @@
             "database": "executive_ai_os",
             "username": "admin"
         }
-    ]
+    ],
+    "python.REPL.enableREPLSmartSend": false
 }
