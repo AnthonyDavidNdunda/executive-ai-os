@@ -1,5 +1,5 @@
 import pandas as pd
-from sqlalchemy import Session
+from sqlalchemy.orm import Session
 from app.models.kpi import KPI
 
 
@@ -14,7 +14,11 @@ def parse_and_store_csv(file_bytes: bytes, db: Session) -> dict:
         missing = required - set(df.columns)
         raise ValueError(f"Missing required columns: {missing}")
     
-    df["date"] = pd_to_datetime(df["date"]).dt.date
+    df["date"] = pd.to_datetime(df["date"]).dt.date
+    
+    #Clear existing data before inserting new records
+    db.query(KPI).delete()
+    db.commit()
 
     records = []
 
@@ -33,4 +37,36 @@ def parse_and_store_csv(file_bytes: bytes, db: Session) -> dict:
 
     return {"Inserted": len(records)}
 
-# Pick up here when you get back 
+def get_summary(db: Session) -> dict:
+    kpis = db.query(KPI).all()
+    if not kpis:
+        return {"message": "No KPI data available."}
+    
+    revenues = [kpi.revenue for kpi in kpis]
+    expenses = [kpi.expenses for kpi in kpis]
+    ebitdas = [kpi.ebitda for kpi in kpis]
+    cash_flows = [kpi.cash_flow for kpi in kpis]
+    margins = [(kpi.ebitda / kpi.revenue * 100) if kpi.revenue else 0 for kpi in kpis]
+    
+    return {
+        "total_revenue": sum(revenues),
+        "total_expenses": sum(expenses),
+        "total_ebitda": sum(ebitdas),
+        "total_cash_flow": sum(cash_flows),
+        "average_operating_margin": round(sum(margins) / len(margins), 2),
+        "record_count": len(kpis)
+    }
+    
+def get_trends(db: Session) -> list:
+    kpis = db.query(KPI).order_by(KPI.date).all()
+    return [
+        {
+            "date": str(kpi.date),
+            "revenue": kpi.revenue,
+            "expenses": kpi.expenses,
+            "ebitda": kpi.ebitda,
+            "cash_flow": kpi.cash_flow,
+            "operating_margin": round((kpi.ebitda / kpi.revenue * 100) if kpi.revenue else 0, 2)
+        }
+        for kpi in kpis
+    ]
