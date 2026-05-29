@@ -7,16 +7,6 @@
             "port": 5432,
             "driver": "PostgreSQL",
             "name": "executive-ai-os-local",
-            "database": "executive-ai-os",
-            "username": "admin"
-        },
-        {
-            "ssh": "Disabled",
-            "previewLimit": 50,
-            "server": "localhost",
-            "port": 5432,
-            "driver": "PostgreSQL",
-            "name": "executive-ai-os-local",
             "database": "executive_ai_os",
             "username": "admin"
         }
