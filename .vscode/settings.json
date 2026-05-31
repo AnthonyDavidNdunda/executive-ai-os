@@ -8,7 +8,8 @@
             "driver": "PostgreSQL",
             "name": "executive-ai-os-local",
             "database": "executive_ai_os",
-            "username": "admin"
+            "username": "admin",
+            "password": "password"
         }
     ],
     "python.REPL.enableREPLSmartSend": false
