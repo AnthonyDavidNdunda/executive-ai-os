@@ -18,4 +18,4 @@ def send_message(request: ChatRequest, db: Session = Depends(get_db)):
     
 @router.get("/history", response_model=list[ChatResponse])
 def get_history(db: Session = Depends(get_db)):
-    return db.query(ChatMessage).order_by(ChatMessage.created_at_desc()).limit(20).all()
+    return db.query(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(20).all()

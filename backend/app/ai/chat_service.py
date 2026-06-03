@@ -39,8 +39,8 @@ def ask_ai(message: str, db: Session) -> str:
     kpi_context = build_kpi_context(db)
 
     response = client.messages.create(
-        model="claude-sonnet-4-5",
-        max_tokens=1024,
+        model="claude-opus-4-7",
+        max_tokens=16000,
         system="""You are an executive financial analyst advising senior leadership.
         Your responses should be:
         - Concise and analytical
