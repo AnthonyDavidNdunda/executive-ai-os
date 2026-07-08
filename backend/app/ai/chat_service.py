@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.chat import ChatMessage
 from app.services.kpi_service import get_summary, get_trends
+from app.ai.retrieval_service import search_documents
 
 client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
@@ -70,3 +71,36 @@ def save_message(user_message: str, ai_response: str, db: Session) -> ChatMessag
     db.refresh(chat)
     
     return chat
+
+
+def ask_ai(message: str, db: Session) -> str:
+    kpi_context - build_kpi_context(db)
+    
+    #Search for relevant document chunks
+    doc_chunks = search_documents(message, db)
+    doc_context = ""
+    if doc_chunks:
+        doc_context = "\n\nRelevant Document Context:\n" + "\n\n".join(doc_chunks)
+        
+    response = client.message.create(
+        model = "claude-opus-4-7",
+        max_tokens = 16000,
+        system="""You are an executive financial analyst advising senior leadership.
+        Your responses should be: 
+        - Concise and analytical
+        - Strategic and forward-looking
+        - Executive-friendly (no jargon)
+        - Data-driven base on the KPI context provided
+
+        Always reference specific numbers from the context when relevant.
+        If the document is provided, incorporate insights from it alongside the KPI data.""",
+        
+        messages=[
+            {
+                "role": "user",
+                "content": f"KPI Context:\n{kpi_context}{doc_context}\n\nQuestion: {message}"
+            }
+        ]
+    ) 
+    
+    return response.context[0].text

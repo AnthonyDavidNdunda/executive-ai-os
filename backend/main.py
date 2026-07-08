@@ -4,6 +4,8 @@ from app.db.database import Base, engine
 from app.api import auth
 from app.api import kpis
 from app.api import chat
+from app.models import document
+from app.api import documents
 
 Base.metadata.create_all(bind=engine)
 
@@ -23,6 +25,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(kpis.router)
 app.include_router(chat.router)
+app.include_router(documents.router)
 
 @app.get("/health")
 def health():
