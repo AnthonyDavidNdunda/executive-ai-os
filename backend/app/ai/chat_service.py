@@ -74,7 +74,7 @@ def save_message(user_message: str, ai_response: str, db: Session) -> ChatMessag
 
 
 def ask_ai(message: str, db: Session) -> str:
-    kpi_context - build_kpi_context(db)
+    kpi_context = build_kpi_context(db)
     
     #Search for relevant document chunks
     doc_chunks = search_documents(message, db)
