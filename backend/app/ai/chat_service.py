@@ -38,15 +38,15 @@ Monthly Breakdown:
 
 def ask_ai(message: str, db: Session) -> str:
     kpi_context = build_kpi_context(db)
+    doc_context = ""
 
     #Search for relevant document chunks
     try:
         doc_chunks = search_documents(message, db)
-        doc_context = ""
         if doc_chunks:
             doc_context = "\n\nRelevant Document Context;\n" + "\n\n".join(doc_chunks)
     except Exception:
-        doc_context = ""
+        pass
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -63,7 +63,7 @@ def ask_ai(message: str, db: Session) -> str:
         messages=[
             {
                 "role": "user",
-                "content": f"KPI Context:\n{kpi_context}\n\nQuestion: {message}"
+                "content": f"KPI Context:\n{kpi_context}{doc_context}\n\nQuestion: {message}"
             }
         ]
 

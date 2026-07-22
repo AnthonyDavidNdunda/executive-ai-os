@@ -41,3 +41,12 @@ def delete_document(document_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Document deleted"}
 
+#temporary debug search
+@router.get("/search")
+def search_docs(query: str, db: Session = Depends(get_db)):
+    from app.ai.retrieval_service import search_documents
+    try:
+        results = search_documents(query, db)
+        return {"results": results, "count": len(results)}
+    except Exception as e:
+        return {"error": str(e)}
