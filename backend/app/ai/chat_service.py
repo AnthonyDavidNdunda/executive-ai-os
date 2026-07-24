@@ -1,10 +1,14 @@
+import json
 import anthropic
+import logging
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.chat import ChatMessage
 from app.services.kpi_service import get_summary, get_trends
 from app.ai.retrieval_service import search_documents
 
+
+logger = logging.getLogger(__name__)
 client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
 def build_kpi_context(db: Session) -> str: 
@@ -36,17 +40,21 @@ Monthly Breakdown:
     return context.strip()
 
 
-def ask_ai(message: str, db: Session) -> str:
+def ask_ai(message: str, db: Session) -> tuple[str, list[str]]:
     kpi_context = build_kpi_context(db)
     doc_context = ""
+    sources = []
 
     #Search for relevant document chunks
     try:
         doc_chunks = search_documents(message, db)
         if doc_chunks:
-            doc_context = "\n\nRelevant Document Context;\n" + "\n\n".join(doc_chunks)
+            doc_context = "\n\nRelevant Document Context;\n" + "\n\n".join(
+                [f"Source: {c['filename']}]\n{c['chunk_text']}" for c in doc_chunks]
+            )
+            sources = list(set([c['filename'] for c in doc_chunks]))
     except Exception:
-        pass
+        logger.exception("Document search failed during AI query: %s", message)
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -59,7 +67,8 @@ def ask_ai(message: str, db: Session) -> str:
         - Data-driven base on the KPI context provided
 
         Always reference specific numbers from the context when relevant.
-        If document context is provided, incorporate insights from it alongside the KPI data.""",
+        If document context is provided, incorporate insights from it alongside the KPI data.
+        When using information from documents, naturally reference the source.""",
         messages=[
             {
                 "role": "user",
@@ -69,12 +78,13 @@ def ask_ai(message: str, db: Session) -> str:
 
     )
 
-    return response.content[0].text
+    return response.content[0].text, sources
 
-def save_message(user_message: str, ai_response: str, db: Session) -> ChatMessage:
+def save_message(user_message: str, ai_response: str, sources: list[str], db: Session) -> ChatMessage:
     chat = ChatMessage(
         user_message=user_message,
-        ai_response=ai_response
+        ai_response=ai_response,
+        sources= json.dumps(sources) if sources else None
     )
     db.add(chat)
     db.commit()

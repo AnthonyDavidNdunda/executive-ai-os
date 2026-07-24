@@ -8,5 +8,6 @@ class ChatMessage(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_message = Column(Text, nullable=False)
     ai_response = Column(Text, nullable=False)
+    sources = Column(Text, nullable=True)  # Store sources as a comma-separated string
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     

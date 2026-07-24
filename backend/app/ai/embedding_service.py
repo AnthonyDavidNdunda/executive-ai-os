@@ -32,7 +32,7 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
 
 def get_embedding(text: str) -> list[float]: 
     voyageai.api_key = settings.VOYAGE_API_KEY
-    return voyageai.get_embedding(text, model = "voyage-3", input_type="document")
+    return voyageai.get_embedding(text, model="voyage-3", input_type="document")
 
 def process_and_store_document(
     file_bytes: bytes,

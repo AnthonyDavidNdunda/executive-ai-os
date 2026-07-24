@@ -10,10 +10,11 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 @router.post("/message", response_model=ChatResponse)
 def send_message(request: ChatRequest, db: Session = Depends(get_db)):
     try:
-        ai_response = ask_ai(request.message, db)
-        chat = save_message(request.message, ai_response, db)
+        ai_response, sources = ask_ai(request.message, db)
+        chat = save_message(request.message, ai_response, sources, db)
         return chat
     except Exception as e:
+        db.rollback()  # Rollback the session in case of an error
         raise HTTPException(status_code=500, detail=f"AI Error: {str(e)}")
     
 @router.get("/history", response_model=list[ChatResponse])

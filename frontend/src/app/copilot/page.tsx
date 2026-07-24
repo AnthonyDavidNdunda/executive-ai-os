@@ -5,13 +5,14 @@ import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, FileText } from "lucide-react";
 import api from "@/services/api";
 
 interface Message {
     id: number;
     user_message: string;
     ai_response: string;
+    sources?: string | null;
     created_at: string;
 }
 
@@ -22,6 +23,15 @@ const SUGGESTED_PROMPTS = [
     "Which month had the strongest margins?",
     "How is cash flow trending?",
 ];
+
+const parseSources = (raw : string | null): string[] => {
+    if (!raw) return [];
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return [];
+    }
+};
 
 export default function CopilotPage() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -145,6 +155,20 @@ export default function CopilotPage() {
                                     <ReactMarkdown>{msg.ai_response}</ReactMarkdown>
                                 </div>
                             </div>
+                            {/* Sources */}
+                            {msg.sources && (
+                                <div className="flex flex-wrap gap-2 ml-10">
+                                    {parseSources(msg.sources).map((src: string) => (
+                                        <span
+                                            key={src}
+                                            className="inline-flex items-center gap-1.5 text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full border border-slate-700"
+                                        >
+                                            <FileText size={11} />
+                                            {src}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
                     <div ref={bottomRef} />
