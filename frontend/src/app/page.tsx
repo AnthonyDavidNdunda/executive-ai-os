@@ -5,27 +5,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Activity, Icon, Car } from "lucide-react";
 import  { getKPISummary, getKPITrends } from "@/services/api";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { resolve } from "path/win32";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
   const [trends, setTrends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [waking, setWaking] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    const sleep = (ms : number) => new Promise((resolve) => setTimeout(resolve, ms));
+
     async function fetchData() {
-      try {
-        const [summaryRes, trendsRes] = await Promise.all([
-          getKPISummary(),
-          getKPITrends(),
-        ]);
-        setSummary(summaryRes.data);
-        setTrends(trendsRes.data);
-      } catch (error) {
-        console.error("Error fetching KPI data: ", error);
-      } finally {
-        setLoading(false);
+      const MAX_ATTEMPTS = 5;
+
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          const [summaryRes, trendsRes] = await Promise.all([
+            getKPISummary(),
+            getKPITrends(),
+          ]);
+          setSummary(summaryRes.data);
+          setTrends(trendsRes.data);
+          setLoading(false);
+          setWaking(false);
+          return; // Exit the function if successful
+        } catch (error) {
+          
+          if (attempt === MAX_ATTEMPTS) {
+            setFailed(true);
+            setLoading(false);
+            return; // Exit the function after max attempts
+          }
+          // First failure is probably from a cold start - let user know
+          setWaking(true);
+          await sleep(attempt * 3000); // 3s, 4s, 5s
+        }
       }
     }
+
     fetchData();
   }, []);
 
@@ -74,8 +93,30 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 gap-2">
         <p className="text-slate-400">Loading dashboard...</p>
+        {waking && (
+          <p className="text-slate-500 text-sm max-w-md text-center">
+            The backend is spinning up from idle. This can take up to a minute on first load.
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className="flex items-center justify-center h-64 gap-3">
+        <p className="text-slate-300">Couldn&apos;t reach the backend</p>
+        <p className="text-slate-500 text-sm max-w-md text-center">
+          This service may still be waking up. Try refreshing in a moment.
+        </p> 
+        <button
+          onClick={() => window.location.reload()}
+          className="text-sm bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2 rounded-lg transition-colors"
+          >
+            Retry
+          </button>
       </div>
     );
   }
