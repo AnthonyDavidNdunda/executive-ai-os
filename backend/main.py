@@ -6,6 +6,9 @@ from app.api import kpis
 from app.api import chat
 from app.models import document
 from app.api import documents
+from app.api import reports
+from app.models import report
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -26,6 +29,7 @@ app.include_router(auth.router)
 app.include_router(kpis.router)
 app.include_router(chat.router)
 app.include_router(documents.router)
+app.include_router(reports.router)
 
 @app.get("/health")
 def health():

@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.models.chat import ChatMessage
 from app.services.kpi_service import get_summary, get_trends
 from app.ai.retrieval_service import search_documents
+from app.services.kpi_service import get_derived_metrics
 
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ def build_kpi_context(db: Session) -> str:
     trends_text = "\n".join([
         f"- {t['date']}: Revenue ${t['revenue']:,.0f}, Expenses ${t['expenses']:,.0f}, "
         f"EBITDA ${t['ebitda']:,.0f}, Margin {t['operating_margin']}%, Cash Flow ${t['cash_flow']:,.0f}"
+        f"Cash Flow ${t['cash_flow']:,.0f}, Conversion {t['cash_conversion']}%"
         for t in trends
     ])
     
@@ -37,6 +39,41 @@ Current KPI Summary:
 Monthly Breakdown:
 {trends_text}
 """
+
+    metrics = get_derived_metrics(db)
+    if metrics:
+        m, f, h = metrics["mom"], metrics["full_period"], metrics["halves"]
+        context +=f"""
+        PRE-CALCULATED METRICS - use these exact figures. Do not compute your own.
+        
+        Month-over-month ({metrics['prior_month']} to {metrics['latest_month']}):
+        - Revenue: {m['revenue_pct']}%
+        - EBITDA: {m['ebitda_pct']}%
+        - Expenses: {m['expenses_pct']}%
+        - Cash flow: {m['cash_flow_pct']}%
+        - Margin: {m['margin_bps']} bps
+        
+        Full period ({f['start']} to {f['end']}):
+        - Revenue: {f['revenue_pct']}%
+        - EBITDA: {f['ebitda_pct']}%
+        - Expenses: {f['expenses_pct']}%
+        - Margin: {f['margin_bps']} bps
+        
+        Margin range: 
+        - Best: {metrics['best_margin_month']['date']} at {metrics['best_margin_month']['margin']}%
+        - Worst: {metrics['worst_margin_month']['date']} at {metrics['worst_margin_month']['margin']}%
+        - Spread: {metrics['margin_spread_bps']} bps
+        
+        First half vs Second half: 
+        - Average Margin: {h['h1_average_margin']}% vs {h['h2_average_margin']}% ({h['margin_shift_bps']} bps)
+        - Expense Ratio: {h['h1_expense_ratio']}% vs {h['h2_expense_ratio']}%
+        
+        Cash conversion (cash flow / EBITDA):
+        - Latest: {metrics['cash_conversion']['latest_pct']}%
+        - Period average: {metrics['cash_conversion']['period_avg_pct']}%
+        """
+        
+    
     return context.strip()
 
 
@@ -68,7 +105,20 @@ def ask_ai(message: str, db: Session) -> tuple[str, list[str]]:
 
         Always reference specific numbers from the context when relevant.
         If document context is provided, incorporate insights from it alongside the KPI data.
-        When using information from documents, naturally reference the source.""",
+        When using information from documents, naturally reference the source.
+            
+        NUMERICAL ACCURACY -- This overrides all other instructions: 
+       - Do not perform arithmetic of any kind. This includes subtracting,
+        dividing, or comparing two figures that were provided to you.
+        Deriving a new number from provided numbers is still prohibited.
+        - State only figures that appear verbatim in the context.
+        - If you want to express a relationship between two numbers and that
+        relationship is not itself provided, describe it in words with no figure.
+        - Before writing any number, confirm it appears in the context above.
+        If it does not, remove it.
+        - Do not label a figure as "implied," "approximately," or "estimated" to
+        work around this rule. Omit it instead.
+        """,
         messages=[
             {
                 "role": "user",

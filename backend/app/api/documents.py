@@ -47,6 +47,14 @@ def search_docs(query: str, db: Session = Depends(get_db)):
     from app.ai.retrieval_service import search_documents
     try:
         results = search_documents(query, db)
-        return {"results": results, "count": len(results)}
+        return {
+            "count": len(results),
+            "results": [
+                {"filename": result["filename"], "similarity": round(result["similarity"], 3),
+                 "preview": result["chunk_text"][:100]
+                }
+                for result in results
+            ],
+        }
     except Exception as e:
         return {"error": str(e)}

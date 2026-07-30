@@ -9,7 +9,7 @@ logger.setLevel(logging.INFO)
 
 voyageai.api_key = settings.VOYAGE_API_KEY
 
-def search_documents(query: str, db: Session, top_k: int = 5) -> list[str]:
+def search_documents(query: str, db: Session, top_k: int = 5, min_similarity: float = 0.4) -> list[str]:
     #Get embedding for the query
     
     try:
@@ -30,6 +30,7 @@ def search_documents(query: str, db: Session, top_k: int = 5) -> list[str]:
         return [
             {"chunk_text": chunk[0], "filename": chunk[1], "similarity": float(chunk[2])}
             for chunk in chunks
+            if float(chunk[2]) >= min_similarity
         ]
     except Exception as e:
         db.rollback()  # Rollback the session in case of an error
