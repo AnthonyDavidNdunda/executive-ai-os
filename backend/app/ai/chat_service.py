@@ -18,10 +18,10 @@ def build_kpi_context(db: Session) -> str:
 
     if not summary or "total_revenue" not in summary:
         return "No KPI data is currently available."
-    
+    print("DEBUG trends[0] keys: ", trends[0].keys() if trends else "EMPTY")
     trends_text = "\n".join([
         f"- {t['date']}: Revenue ${t['revenue']:,.0f}, Expenses ${t['expenses']:,.0f}, "
-        f"EBITDA ${t['ebitda']:,.0f}, Margin {t['operating_margin']}%, Cash Flow ${t['cash_flow']:,.0f}"
+        f"EBITDA ${t['ebitda']:,.0f}, Margin {t['operating_margin']}%, "
         f"Cash Flow ${t['cash_flow']:,.0f}, Conversion {t['cash_conversion']}%"
         for t in trends
     ])

@@ -4,7 +4,9 @@ from app.db.database import get_db
 from app.schemas.report import ReportRequest, ReportResponse
 from app.models.report import Report
 from app.ai.report_service import generate_report, REPORT_TYPES
+import logging
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -21,6 +23,7 @@ def create_report(request: ReportRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         db.rollback()
+        logger.exception("Report generation failed")
         raise HTTPException(status_code=500, detail=f"Report generation failed: {e}")
     
 @router.get("/", response_model=list[ReportResponse])

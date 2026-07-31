@@ -128,7 +128,8 @@ def get_trends(db: Session) -> list:
             "expenses": kpi.expenses,
             "ebitda": kpi.ebitda,
             "cash_flow": kpi.cash_flow,
-            "operating_margin": round((kpi.ebitda / kpi.revenue * 100) if kpi.revenue else 0, 2)
+            "operating_margin": round((kpi.ebitda / kpi.revenue * 100) if kpi.revenue else 0, 2),
+            "cash_conversion": round(kpi.cash_flow / kpi.ebitda * 100, 1) if kpi.ebitda else None
         }
         for kpi in kpis
     ]
