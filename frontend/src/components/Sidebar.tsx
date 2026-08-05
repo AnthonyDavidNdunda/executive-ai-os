@@ -8,6 +8,7 @@ import {
   Upload,
   TrendingUp,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { label: "Uploads", href: "/uploads", icon: Upload },
   { label: "Forecasting", href: "/forecasting", icon: TrendingUp },
   { label: "Alerts", href: "/alerts", icon: AlertTriangle },
+  { label: "Reports", href: "/reports", icon: FileText },
 ];
 
 export default function Sidebar() {

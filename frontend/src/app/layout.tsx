@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <body className={`${inter.className} bg-slate-950 text-slate-100`}>
         <div className="flex h-screen overflow-hidden">
           <Sidebar />
