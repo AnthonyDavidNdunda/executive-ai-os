@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, DollarSign, Activity, Icon, Car } from "lucid
 import  { getKPISummary, getKPITrends } from "@/services/api";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { resolve } from "path/win32";
+import { withRetry } from "@/services/retry";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<any>(null);
@@ -15,36 +16,22 @@ export default function DashboardPage() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const sleep = (ms : number) => new Promise((resolve) => setTimeout(resolve, ms));
-
     async function fetchData() {
-      const MAX_ATTEMPTS = 5;
-
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        try {
-          const [summaryRes, trendsRes] = await Promise.all([
-            getKPISummary(),
-            getKPITrends(),
-          ]);
-          setSummary(summaryRes.data);
-          setTrends(trendsRes.data);
-          setLoading(false);
-          setWaking(false);
-          return; // Exit the function if successful
-        } catch (error) {
-          
-          if (attempt === MAX_ATTEMPTS) {
-            setFailed(true);
-            setLoading(false);
-            return; // Exit the function after max attempts
-          }
-          // First failure is probably from a cold start - let user know
-          setWaking(true);
-          await sleep(attempt * 3000); // 3s, 4s, 5s
-        }
+      try {
+        const [summaryRes, trendsRes] = await withRetry(
+          () => Promise.all([getKPISummary(), getKPITrends()]),
+          { onRetry: () => setWaking(true) }
+        );
+        setSummary(summaryRes.data);
+        setTrends(trendsRes.data);
+        setWaking(false);
+      }catch (err) {
+        console.error("Failed to fetch KPI data", err);
+        setFailed(true);
+      } finally {
+        setLoading(false);
       }
     }
-
     fetchData();
   }, []);
 

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Bot, User, FileText } from "lucide-react";
 import api from "@/services/api";
+import { withRetry } from "@/services/retry"
 
 interface Message {
     id: number;
@@ -39,12 +40,16 @@ export default function CopilotPage() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const [waking, setWaking] = useState(false);
 
     useEffect(() => {
         async function loadHistory() {
             try {
-                const response = await api.get("/chat/history");
+                const response = await withRetry(() => api.get("/chat/history"), {
+                    onRetry: () => setWaking(true),
+                });
                 setMessages(response.data.reverse());
+                setWaking(false);
             } catch (error) {
                 console.error("Failed to load chat history", error);
             } finally {
@@ -127,7 +132,7 @@ export default function CopilotPage() {
                 <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                     {fetching && (
                         <p className="text-slate-500 text-sm text-center">
-                            Loading chat history...
+                            {waking ? "Waking the backedn from idle..." : "Loading history.."}
                         </p>
                     )}
                     {!fetching && messages.length === 0 && (

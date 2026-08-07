@@ -7,6 +7,7 @@ import { FileText, Loader2, Trash2, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { getReportTypes, generateReport, getReports, deleteReport } from "@/services/api";
 import remarkGfm from "remark-gfm";
+import { withRetry } from "@/services/retry";
 
 interface ReportType {
     id: string;
@@ -38,21 +39,23 @@ export default function ReportsPage() {
     const [generatingType, setGeneratingType] = useState<string | null>(null);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
+    const [waking, setWaking] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
 
     useEffect(() => {
         async function load() {
             try {
-                const [typesRes, reportsRes] = await Promise.all([
-                    getReportTypes(),
-                    getReports(),
-                ]);
+                const [typesRes, reportsRes] = await withRetry(
+                    () => Promise.all([getReportTypes(), getReports()]),
+                    { onRetry: () => setWaking(true) }
+                );
                 setTypes(typesRes.data);
                 setReports(reportsRes.data);
-                if (reportsRes.data.length > 0) {
-                    setSelected(reportsRes.data[0]);
-                }
+                if (reportsRes.data.length > 0) setSelected(reportsRes.data[0]);
+                setWaking(false);
             } catch (err) {
                 console.error("Failed to load reports", err)
+                setLoadFailed(true);
             } finally {
                 setLoading(false);
             }
@@ -94,13 +97,32 @@ export default function ReportsPage() {
                 </p>
             </div>
 
+            {loading && waking && (
+                <p className="text-slate-500 text-sm">
+                    Waking up the backend from idle. This can take up to a minute on first load.
+                </p>
+            )}
+
+            {loadFailed && (
+                <div className="flex items-center gap-3 text-slate-300 bg-slate-800/50 px-4 py-3 rounded-lg text-sm">
+                    <AlertCircle size={16} className="text-slate-500" />
+                    <span>Couldn&apos;t reach the backend.</span>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="text-blue-400 hover:text-blue-500 transition-colors"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+
             {/*Generate buttons*/}
             <div className="flex flex-wrap gap-3">
                 {types.map((type) => (
                     <Button
                         key={type.id}
                         onClick={() => handleGenerate(type.id)}
-                        disabled={generatingType !== null}
+                        disabled={generatingType !== null || types.length === 0}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         >
                         {generatingType === type.id ? (
