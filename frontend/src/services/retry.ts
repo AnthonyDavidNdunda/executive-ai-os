@@ -5,7 +5,7 @@ interface RetryOptions {
     onRetry?: () => void;
 }
 
-export async function withRetry<>(
+export async function withRetry<T>(
     fn: () => Promise<T>,
     { maxAttempts = 5, onRetry }: RetryOptions = {}
 ): Promise<T> {
