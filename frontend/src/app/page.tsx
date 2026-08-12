@@ -78,6 +78,14 @@ export default function DashboardPage() {
     Margin: t.operating_margin,
   }));
 
+  const formatMonthYear = (iso: string) =>
+    new Date(iso + "T00:00:00").toLocaleString("en-US", {
+      month: "long",
+      year: "numeric",
+  });
+  
+  const periodLabel = trends.length > 0 ? `${formatMonthYear(trends[0].date)} - ${formatMonthYear(trends[trends.length -1].date)}` : "";
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64 gap-2">
@@ -112,7 +120,9 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-white">Performance Overview</h2>
-        <p className="text-slate-400 text-sm mt-1">2024 -- Executive Summary</p>
+        <p className="text-slate-400 text-sm mt-1">
+          {periodLabel && `${periodLabel} - Executive Summary`}
+        </p>
       </div>
 
       {/* KPI Cards */}

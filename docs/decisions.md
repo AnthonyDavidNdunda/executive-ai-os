@@ -21,3 +21,18 @@ pre-calculated. The prompt prohibits arithmetic outright.
 This reduces but does not eliminate errors — the model will still derive
 from provided numbers when it wants a comparison that wasn't anticipated.
 Generated reports require human review before circulation.
+
+## Planned: LLM output validation layer
+
+Pre-calculating metrics eliminated arithmetic errors but not false claims. Observed failures on 60-month data;
+    - "EBITDA crossed the million-dollar threshold" - (actual: $969,244)
+    - "more than double the 16.78%" (actual: 1.94x)
+
+Both quote correct figures while asserting incorrect relationships, so they are invisible to generation-time
+constraints
+
+Approach: post-generation validation pass that extracts numeric claims, classifies them (quoted/derived/threshold), 
+verifies against source data, and annotates unverified claims in the UI rather than blocking. 
+
+Scope narrowly at first - table figures only, where extraction is reliable. Prose extraction is the difficult part
+and a validator with false negatives is worse than having no validator at all.
