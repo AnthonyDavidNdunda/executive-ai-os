@@ -31,7 +31,7 @@ class ProphetForecaster:
             "y": [h["value"] for h in history],
         })
         
-        model = self._build_model
+        model = self._build_model()
         model.fit(df)
         
         future = model.make_future_dataframe(periods=periods, freq="MS")
@@ -50,7 +50,7 @@ class ProphetForecaster:
         return ForecastResult(
             model_name=self.name,
             metric=metric,
-            points=points
+            points=points,
             has_intervals=True,
             metadata={"training_months": len(df)},
         )
